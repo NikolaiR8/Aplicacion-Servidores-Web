@@ -31,7 +31,7 @@ export class EnrollmentsService {
     }
 
     // 3. Validar que el curso exista
-    const course = this.coursesService.findOne(courseId);
+    const course = this.coursesService.findOne(String(courseId));
     if (!course) {
       throw new NotFoundException(`El curso con ID ${courseId} no existe`);
     }
@@ -67,7 +67,7 @@ export class EnrollmentsService {
   }
 
   findByCourse(courseId: number) {
-    const course = this.coursesService.findOne(courseId);
+    const course = this.coursesService.findOne(String(courseId));
     if (!course) throw new NotFoundException(`El curso con ID ${courseId} no existe`);
     return this.findAll(undefined, courseId);
   }

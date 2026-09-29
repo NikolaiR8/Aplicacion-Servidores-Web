@@ -114,5 +114,72 @@ Nest is an MIT-licensed open source project. It can grow thanks to the sponsors 
 
 Nest is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).
 =======
-# Aplicaci�n para el servidor web
+# Aplicaci�n para el servidor web
 >>>>>>> ca91358e6b9464ef458d986e73e442ab6dcc2389
+
+## Módulo de Matrículas (Enrollments) - Evaluación Práctica
+
+### Tabla de Endpoints
+
+| Método | Endpoint | Descripción |
+|---|---|---|
+| POST | `/enrollments` | Registra una nueva matrícula validando reglas de negocio. |
+| GET | `/enrollments` | Lista todas las matrículas. Acepta filtros `?studentId=1` o `?courseId=1`. |
+| GET | `/students/:studentId/enrollments` | Lista las matrículas de un estudiante específico. |
+| GET | `/courses/:courseId/enrollments` | Lista las matrículas de un curso específico. |
+| DELETE | `/enrollments/:id` | Cancela/Elimina una matrícula por su ID. |
+
+### Ejemplos de Request y Response
+
+#### 1. Crear Matrícula (Éxito)
+**Request (POST `/enrollments`)**
+\`\`\`json
+{
+  "studentId": 1,
+  "courseId": 2
+}
+\`\`\`
+**Response (201 Created)**
+\`\`\`json
+{
+  "id": 1,
+  "studentId": 1,
+  "courseId": 2
+}
+\`\`\`
+
+#### 2. Error por Matrícula Duplicada (Regla de negocio)
+**Request (POST `/enrollments`)** - *Intentando matricular al estudiante 1 en el curso 2 nuevamente.*
+**Response (409 Conflict)**
+\`\`\`json
+{
+  "message": "El estudiante ya está matriculado en este curso",
+  "error": "Conflict",
+  "statusCode": 409
+}
+\`\`\`
+
+#### 3. Error por Estudiante Inactivo
+**Request (POST `/enrollments`)** - *Con un studentId cuyo isActive sea false.*
+**Response (400 Bad Request)**
+\`\`\`json
+{
+  "message": "El estudiante con ID 3 no está activo",
+  "error": "Bad Request",
+  "statusCode": 400
+}
+\`\`\`
+
+{
+  "name": "Juan Activo",
+  "email": "juan@test.com",
+  "career": "Software",
+  "semester": 5,
+  "isActive": true,
+  "age": 21
+}
+
+{
+  "studentId": 1,
+  "courseId": 1
+}

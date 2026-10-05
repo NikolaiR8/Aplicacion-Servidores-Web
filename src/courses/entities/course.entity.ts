@@ -1,13 +1,13 @@
-import { Column, Entity, PrimaryGeneratedColumn } from 'typeorm'; // 1
+import { Column, Entity, PrimaryGeneratedColumn } from 'typeorm';
 
-@Entity('courses') // 2
-export class Course { // 3
-  @PrimaryGeneratedColumn() // 4
+@Entity('courses')
+export class Course {
+  @PrimaryGeneratedColumn()
   id: number;
 
-  @Column() // 5
+  @Column()
   title: string;
 
-  @Column() // 6
+  @Column()
   level: string;
 }

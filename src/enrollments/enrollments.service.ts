@@ -1,83 +1,70 @@
-import { Injectable, NotFoundException, BadRequestException, ConflictException } from '@nestjs/common';
+import { Injectable, NotFoundException, ConflictException, BadRequestException } from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
+import { Enrollment } from './entities/enrollment.entity.js';
+import { Student } from '../students/entities/student.entity.js';
+import { Course } from '../courses/entities/course.entity.js';
 import { CreateEnrollmentDto } from './dto/create-enrollment.dto.js';
-import { StudentsService } from '../students/students.service.js';
-import { CoursesService } from '../courses/courses.service.js';
-
-type Enrollment = {
-  id: number;
-  studentId: number;
-  courseId: number;
-};
 
 @Injectable()
 export class EnrollmentsService {
-  private readonly enrollments: Enrollment[] = [];
-  private nextId = 1;
-
   constructor(
-    private readonly studentsService: StudentsService,
-    private readonly coursesService: CoursesService,
+    @InjectRepository(Enrollment) private enrollmentsRepo: Repository<Enrollment>,
+    @InjectRepository(Student) private studentsRepo: Repository<Student>,
+    @InjectRepository(Course) private coursesRepo: Repository<Course>,
   ) {}
 
-  create(createEnrollmentDto: CreateEnrollmentDto) {
+  async create(createEnrollmentDto: CreateEnrollmentDto) {
     const { studentId, courseId } = createEnrollmentDto;
 
-    // 1. Validar que el estudiante exista (findOne ya lanza 404 si no existe)
-    const student = this.studentsService.findOne(studentId);
-    
-    // 2. Validar que el estudiante esté activo
-    if (!student.isActive) {
-      throw new BadRequestException(`El estudiante con ID ${studentId} no está activo`);
-    }
+    // 1. Validar que el estudiante exista y esté activo
+    const student = await this.studentsRepo.findOne({ where: { id: studentId } });
+    if (!student) throw new NotFoundException(`El estudiante con ID ${studentId} no existe`);
+    if (!student.isActive) throw new BadRequestException(`El estudiante con ID ${studentId} no está activo`);
 
-    // 3. Validar que el curso exista
-    const course = this.coursesService.findOne(String(courseId));
-    if (!course) {
-      throw new NotFoundException(`El curso con ID ${courseId} no existe`);
-    }
+    // 2. Validar que el curso exista
+    const course = await this.coursesRepo.findOne({ where: { id: courseId } });
+    if (!course) throw new NotFoundException(`El curso con ID ${courseId} no existe`);
 
-    // 4. Validar que no exista matrícula duplicada
-    const isEnrolled = this.enrollments.find(
-      (e) => e.studentId === studentId && e.courseId === courseId
-    );
-    if (isEnrolled) {
-      throw new ConflictException(`El estudiante ya está matriculado en este curso`);
-    }
+    // 3. Validar que no exista matrícula duplicada
+    const existing = await this.enrollmentsRepo.findOne({ 
+      where: { student: { id: studentId }, course: { id: courseId } } 
+    });
+    if (existing) throw new ConflictException('El estudiante ya está matriculado en este curso');
 
-    const newEnrollment: Enrollment = {
-      id: this.nextId++,
-      studentId,
-      courseId,
-    };
-    
-    this.enrollments.push(newEnrollment);
-    return newEnrollment;
+    // 4. Guardar en PostgreSQL
+    const newEnrollment = this.enrollmentsRepo.create({ student, course });
+    return await this.enrollmentsRepo.save(newEnrollment);
   }
 
-  findAll(studentId?: number, courseId?: number) {
-    let result = this.enrollments;
-    if (studentId) result = result.filter((e) => e.studentId === studentId);
-    if (courseId) result = result.filter((e) => e.courseId === courseId);
-    return result;
+  async findAll(studentId?: number, courseId?: number) {
+    const qb = this.enrollmentsRepo.createQueryBuilder('e')
+      .leftJoinAndSelect('e.student', 'student')
+      .leftJoinAndSelect('e.course', 'course');
+      
+    if (studentId) qb.andWhere('student.id = :studentId', { studentId });
+    if (courseId) qb.andWhere('course.id = :courseId', { courseId });
+    
+    return await qb.getMany();
   }
 
-  findByStudent(studentId: number) {
-    this.studentsService.findOne(studentId); // Valida que exista el estudiante
+  async findByStudent(studentId: number) {
+    const student = await this.studentsRepo.findOne({ where: { id: studentId } });
+    if (!student) throw new NotFoundException(`El estudiante con ID ${studentId} no existe`);
     return this.findAll(studentId, undefined);
   }
 
-  findByCourse(courseId: number) {
-    const course = this.coursesService.findOne(String(courseId));
+  async findByCourse(courseId: number) {
+    const course = await this.coursesRepo.findOne({ where: { id: courseId } });
     if (!course) throw new NotFoundException(`El curso con ID ${courseId} no existe`);
     return this.findAll(undefined, courseId);
   }
 
-  remove(id: number) {
-    const index = this.enrollments.findIndex((e) => e.id === id);
-    if (index === -1) {
-      throw new NotFoundException(`La matrícula con ID ${id} no existe`);
-    }
-    const [removed] = this.enrollments.splice(index, 1);
-    return removed;
+  async remove(id: number) {
+    const enrollment = await this.enrollmentsRepo.findOne({ where: { id } });
+    if (!enrollment) throw new NotFoundException(`La matrícula con ID ${id} no existe`);
+    
+    await this.enrollmentsRepo.remove(enrollment);
+    return { message: 'Matrícula cancelada con éxito' };
   }
 }

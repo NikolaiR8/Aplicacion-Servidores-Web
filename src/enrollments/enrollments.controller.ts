@@ -1,8 +1,17 @@
-import { Controller, Get, Post, Body, Param, Delete, Query, ParseIntPipe } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Param,
+  Delete,
+  Query,
+  ParseIntPipe,
+} from '@nestjs/common';
 import { EnrollmentsService } from './enrollments.service.js';
 import { CreateEnrollmentDto } from './dto/create-enrollment.dto.js';
 
-@Controller() 
+@Controller()
 export class EnrollmentsController {
   constructor(private readonly enrollmentsService: EnrollmentsService) {}
 
@@ -13,12 +22,10 @@ export class EnrollmentsController {
 
   @Get('enrollments')
   findAll(
-    @Query('studentId') studentId?: string,
-    @Query('courseId') courseId?: string,
+    @Query('studentId', new ParseIntPipe({ optional: true })) studentId?: number,
+    @Query('courseId', new ParseIntPipe({ optional: true })) courseId?: number,
   ) {
-    const sId = studentId ? parseInt(studentId, 10) : undefined;
-    const cId = courseId ? parseInt(courseId, 10) : undefined;
-    return this.enrollmentsService.findAll(sId, cId);
+    return this.enrollmentsService.findAll(studentId, courseId);
   }
 
   @Get('students/:studentId/enrollments')

@@ -1,0 +1,154 @@
+{
+  "info": {
+    "_postman_id": "c6a7e029-7984-4d88-bbf3-0ec387d81234",
+    "name": "CourseHub API - Semana 06 (Demostración Requerida)",
+    "description": "Colección Postman para la entrega de la Semana 06: Filtros, paginación, búsqueda con QueryBuilder y validaciones seguras.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "1. Cursos - Página 1 (Paginación y Orden ASC)",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/courses?page=1&limit=4&sortBy=title&order=ASC",
+          "host": ["{{baseUrl}}"],
+          "path": ["courses"],
+          "query": [
+            { "key": "page", "value": "1" },
+            { "key": "limit", "value": "4" },
+            { "key": "sortBy", "value": "title" },
+            { "key": "order", "value": "ASC" }
+          ]
+        },
+        "description": "Demuestra la primera página de cursos con límite 4 y ordenados alfabéticamente por título."
+      },
+      "response": []
+    },
+    {
+      "name": "2. Cursos - Página 2 (Mismo Orden, Sin Elementos Repetidos)",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/courses?page=2&limit=4&sortBy=title&order=ASC",
+          "host": ["{{baseUrl}}"],
+          "path": ["courses"],
+          "query": [
+            { "key": "page", "value": "2" },
+            { "key": "limit", "value": "4" },
+            { "key": "sortBy", "value": "title" },
+            { "key": "order", "value": "ASC" }
+          ]
+        },
+        "description": "Demuestra la segunda página consecutiva con el mismo ordenamiento, evidenciando que ningún curso se repite respecto a la página 1."
+      },
+      "response": []
+    },
+    {
+      "name": "3. Cursos - Filtrado por Nivel (level=beginner y Metadatos)",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/courses?level=beginner&page=1&limit=5&sortBy=title&order=ASC",
+          "host": ["{{baseUrl}}"],
+          "path": ["courses"],
+          "query": [
+            { "key": "level", "value": "beginner" },
+            { "key": "page", "value": "1" },
+            { "key": "limit", "value": "5" },
+            { "key": "sortBy", "value": "title" },
+            { "key": "order", "value": "ASC" }
+          ]
+        },
+        "description": "Filtra cursos por nivel 'beginner' y comprueba los metadatos de respuesta (total, page, limit, totalPages)."
+      },
+      "response": []
+    },
+    {
+      "name": "4. Matrículas - Búsqueda Textual (search=nest)",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/enrollments?search=nest&page=1&limit=10",
+          "host": ["{{baseUrl}}"],
+          "path": ["enrollments"],
+          "query": [
+            { "key": "search", "value": "nest" },
+            { "key": "page", "value": "1" },
+            { "key": "limit", "value": "10" }
+          ]
+        },
+        "description": "Búsqueda textual insensible a mayúsculas que coincide con el título del curso (NestJS Fundamentals, Advanced NestJS...) o con el nombre del estudiante (Nestor Castillo) usando ILIKE parametrizado."
+      },
+      "response": []
+    },
+    {
+      "name": "5. Matrículas - Combinación (Búsqueda + Estudiante Activo + Paginación)",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/enrollments?search=ana&activeOnly=true&page=1&limit=2",
+          "host": ["{{baseUrl}}"],
+          "path": ["enrollments"],
+          "query": [
+            { "key": "search", "value": "ana" },
+            { "key": "activeOnly", "value": "true" },
+            { "key": "page", "value": "1" },
+            { "key": "limit", "value": "2" }
+          ]
+        },
+        "description": "Combina búsqueda textual ('ana'), filtro de estudiante activo ('activeOnly=true') y paginación (limit=2)."
+      },
+      "response": []
+    },
+    {
+      "name": "6. Validación - Petición Inválida (Error 400 Bad Request)",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/courses?page=0&limit=200&sortBy=invalido&order=lateral",
+          "host": ["{{baseUrl}}"],
+          "path": ["courses"],
+          "query": [
+            { "key": "page", "value": "0" },
+            { "key": "limit", "value": "200" },
+            { "key": "sortBy", "value": "invalido" },
+            { "key": "order", "value": "lateral" }
+          ]
+        },
+        "description": "Demuestra que parámetros no válidos (page < 1, limit > 50, sortBy no permitido, order no permitido) son rechazados por ValidationPipe con código 400 Bad Request."
+      },
+      "response": []
+    },
+    {
+      "name": "7. Búsqueda Sin Resultados (Código 200 y Colección Vacía)",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/enrollments?search=inexistente12345",
+          "host": ["{{baseUrl}}"],
+          "path": ["enrollments"],
+          "query": [
+            { "key": "search", "value": "inexistente12345" }
+          ]
+        },
+        "description": "Demuestra que una búsqueda que no encuentra resultados responde con código 200 HTTP y estructura { items: [], meta: { total: 0, ... } } (no 404)."
+      },
+      "response": []
+    }
+  ],
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:3000",
+      "type": "string"
+    }
+  ]
+}

@@ -1,0 +1,23 @@
+### CourseHub API - Pruebas Semana 6
+@baseUrl = http://localhost:3000
+
+### 1. Cursos - Página 1 (Paginación y Orden ASC)
+GET {{baseUrl}}/courses?page=1&limit=4&sortBy=title&order=ASC
+
+### 2. Cursos - Página 2 (Mismo Orden, Sin Elementos Repetidos)
+GET {{baseUrl}}/courses?page=2&limit=4&sortBy=title&order=ASC
+
+### 3. Cursos - Filtrado por Nivel y Metadatos
+GET {{baseUrl}}/courses?level=beginner&page=1&limit=5&sortBy=title&order=ASC
+
+### 4. Matrículas - Búsqueda Textual con QueryBuilder (search=nest)
+GET {{baseUrl}}/enrollments?search=nest&page=1&limit=10
+
+### 5. Matrículas - Búsqueda Combinada (search=ana, activeOnly=true, limit=2)
+GET {{baseUrl}}/enrollments?search=ana&activeOnly=true&page=1&limit=2
+
+### 6. Validación y Seguridad - Petición Inválida (Error 400 Bad Request)
+GET {{baseUrl}}/courses?page=0&limit=200&sortBy=invalido&order=lateral
+
+### 7. Búsqueda Sin Resultados (Código 200 y Colección Vacía)
+GET {{baseUrl}}/enrollments?search=inexistente12345

@@ -1,185 +1,246 @@
-<<<<<<< HEAD
-<p align="center">
-  <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="120" alt="Nest Logo" /></a>
-</p>
+# CourseHub API - Aplicaciones para el Servidor Web
 
-[circleci-image]: https://img.shields.io/circleci/build/github/nestjs/nest/master?token=abc123def456
-[circleci-url]: https://circleci.com/gh/nestjs/nest
+API RESTful desarrollada con **NestJS**, **TypeORM** y **PostgreSQL** para la gestión de cursos, estudiantes y matrículas académicas.
 
-  <p align="center">A progressive <a href="http://nodejs.org" target="_blank">Node.js</a> framework for building efficient and scalable server-side applications.</p>
-    <p align="center">
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/v/@nestjs/core.svg" alt="NPM Version" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/l/@nestjs/core.svg" alt="Package License" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/dm/@nestjs/common.svg" alt="NPM Downloads" /></a>
-<a href="https://circleci.com/gh/nestjs/nest" target="_blank"><img src="https://img.shields.io/circleci/build/github/nestjs/nest/master" alt="CircleCI" /></a>
-<a href="https://discord.gg/G7Qnnhy" target="_blank"><img src="https://img.shields.io/badge/discord-online-brightgreen.svg" alt="Discord"/></a>
-<a href="https://opencollective.com/nest#backer" target="_blank"><img src="https://opencollective.com/nest/backers/badge.svg" alt="Backers on Open Collective" /></a>
-<a href="https://opencollective.com/nest#sponsor" target="_blank"><img src="https://opencollective.com/nest/sponsors/badge.svg" alt="Sponsors on Open Collective" /></a>
-  <a href="https://paypal.me/kamilmysliwiec" target="_blank"><img src="https://img.shields.io/badge/Donate-PayPal-ff3f59.svg" alt="Donate us"/></a>
-    <a href="https://opencollective.com/nest#sponsor"  target="_blank"><img src="https://img.shields.io/badge/Support%20us-Open%20Collective-41B883.svg" alt="Support us"></a>
-  <a href="https://twitter.com/nestframework" target="_blank"><img src="https://img.shields.io/twitter/follow/nestframework.svg?style=social&label=Follow" alt="Follow us on Twitter"></a>
-</p>
-  <!--[![Backers on Open Collective](https://opencollective.com/nest/backers/badge.svg)](https://opencollective.com/nest#backer)
-  [![Sponsors on Open Collective](https://opencollective.com/nest/sponsors/badge.svg)](https://opencollective.com/nest#sponsor)-->
+---
 
-## Description
+## Semana 6: Filtros, Paginación y Búsqueda con QueryBuilder
 
-[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
+Esta entrega implementa consultas avanzadas, seguras y predecibles sobre los recursos persistentes del sistema:
+- **Paginación y ordenamiento controlado** en `/courses`.
+- **Búsqueda textual insensible a mayúsculas (`ILIKE`) y filtros combinados con `QueryBuilder`** en `/enrollments`.
+- **Validación estricta y segura** con `ValidationPipe`, DTOs de consulta tipados, listas blancas y transformación automática de tipos.
+- **Metadatos de paginación** (`total`, `page`, `limit`, `totalPages`) para permitir navegación predecible a clientes frontend/móviles.
 
-## Project setup
+---
 
-```bash
-$ npm install
+## 1. DTOs de Consulta
+
+### A. `CoursesQueryDto` (`src/courses/dto/courses-query.dto.ts`)
+Controla la consulta paginada, filtrada y ordenada del listado de cursos.
+
+| Parámetro | Tipo | Requerido | Valor por defecto | Validaciones / Reglas |
+|---|---|---|---|---|
+| `level` | `string` | No | `undefined` | Filtro por igualdad de nivel (`beginner`, `intermediate`, `advanced`). |
+| `page` | `number` | No | `1` | Entero positivo, `@Min(1)`. |
+| `limit` | `number` | No | `10` | Entero positivo entre 1 y 50 (`@Min(1)`, `@Max(50)`). |
+| `sortBy` | `string` | No | `'id'` | Lista permitida cerrada: `'id'`, `'title'`, `'level'`. Previene inyección SQL por nombre de columna. |
+| `order` | `string` | No | `'ASC'` | Transforma a mayúsculas; solo admite `'ASC'` o `'DESC'`. |
+
+### B. `EnrollmentsQueryDto` (`src/enrollments/dto/enrollments-query.dto.ts`)
+Controla la búsqueda y filtrado compuesto sobre matrículas y sus recursos relacionados (`student` y `course`).
+
+| Parámetro | Tipo | Requerido | Valor por defecto | Validaciones / Reglas |
+|---|---|---|---|---|
+| `search` | `string` | No | `undefined` | Texto de búsqueda que coincide con `student.name` o `course.title` sin distinguir mayúsculas/minúsculas. |
+| `studentId` | `number` | No | `undefined` | Identificador del estudiante (`@Min(1)`). |
+| `courseId` | `number` | No | `undefined` | Identificador del curso (`@Min(1)`). |
+| `activeOnly` | `string` | No | `undefined` | `@IsBooleanString()`. Si es `'true'`, filtra estudiantes activos (`isActive: true`). |
+| `page` | `number` | No | `1` | Entero positivo, `@Min(1)`. |
+| `limit` | `number` | No | `10` | Entero positivo entre 1 y 50 (`@Min(1)`, `@Max(50)`). |
+
+---
+
+## 2. Ejemplos de URLs y Respuestas
+
+### Ejemplo 1: Paginación y ordenamiento de cursos
+```http
+GET /courses?page=1&limit=4&sortBy=title&order=ASC
 ```
-
-## Compile and run the project
-
-```bash
-# development
-$ npm run start
-
-# watch mode
-$ npm run start:dev
-
-# production mode
-$ npm run start:prod
-```
-
-## Run tests
-
-```bash
-# unit tests
-$ npm run test
-
-# e2e tests
-$ npm run test:e2e
-
-# test coverage
-$ npm run test:cov
-```
-
-## Deployment
-
-When you're ready to deploy your NestJS application to production, there are some key steps you can take to ensure it runs as efficiently as possible. Check out the [deployment documentation](https://docs.nestjs.com/deployment) for more information.
-
-If you are looking for a cloud-based platform to deploy your NestJS application, check out [Mau](https://mau.nestjs.com), our official platform for deploying NestJS applications on AWS. Mau makes deployment straightforward and fast, requiring just a few simple steps:
-
-```bash
-$ npm install -g @nestjs/mau
-$ mau deploy
-```
-
-With Mau, you can deploy your application in just a few clicks, allowing you to focus on building features rather than managing infrastructure.
-
-## Observability
-
-In production applications, observability is essential for understanding how your system behaves, detecting issues early, and maintaining reliable performance.
-
-[NestJS Observe](https://observe.nestjs.com) automatically instruments your NestJS application, giving you deep visibility into your system with minimal setup:
-
-- **Distributed tracing:** Follow requests across services and understand how they flow through your system.
-- **Waterfall analysis:** Visualize request execution and identify slow operations, bottlenecks, and unexpected delays.
-- **Performance analysis:** Analyze application performance in real time and quickly pinpoint areas that need optimization.
-- **Metrics:** Track key application and infrastructure metrics to understand system health and performance trends.
-- **Logging:** Centralize and correlate logs with traces and other telemetry to make debugging easier.
-- **Error tracking:** Detect errors quickly and investigate their root causes with the surrounding context.
-- **SLA monitoring:** Track service-level objectives and identify when your application is approaching or exceeding defined thresholds.
-- **Alarms and alerts:** Set up alerts for critical errors, performance degradation, SLA violations, and other anomalies so your team can react quickly.
-
-## Resources
-
-Check out a few resources that may come in handy when working with NestJS:
-
-- Visit the [NestJS Documentation](https://docs.nestjs.com) to learn more about the framework.
-- For questions and support, please visit our [Discord channel](https://discord.gg/G7Qnnhy).
-- To dive deeper and get more hands-on experience, check out our official video [courses](https://courses.nestjs.com/).
-- Deploy your application to AWS with the help of [NestJS Mau](https://mau.nestjs.com) in just a few clicks.
-- Auto-instrument your application with [NestJS Observer](https://observer.nestjs.com). Distributed tracing, metrics, and logging made easy. Error tracking and performance monitoring for your NestJS applications.
-- Visualize your application graph and interact with the NestJS application in real-time using [NestJS Devtools](https://devtools.nestjs.com).
-- Need help with your project (part-time to full-time)? Check out our official [enterprise support](https://enterprise.nestjs.com).
-- To stay in the loop and get updates, follow us on [X](https://x.com/nestframework) and [LinkedIn](https://linkedin.com/company/nestjs).
-- Looking for a job, or have a job to offer? Check out our official [Jobs board](https://jobs.nestjs.com).
-
-## Support
-
-Nest is an MIT-licensed open source project. It can grow thanks to the sponsors and support by the amazing backers. If you'd like to join them, please [read more here](https://docs.nestjs.com/support).
-
-## Stay in touch
-
-- Author - [Kamil Myśliwiec](https://twitter.com/kammysliwiec)
-- Website - [https://nestjs.com](https://nestjs.com/)
-- Twitter - [@nestframework](https://twitter.com/nestframework)
-
-## License
-
-Nest is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).
-=======
-# Aplicaci�n para el servidor web
->>>>>>> ca91358e6b9464ef458d986e73e442ab6dcc2389
-
-## Módulo de Matrículas (Enrollments) - Evaluación Práctica
-
-### Tabla de Endpoints
-
-| Método | Endpoint | Descripción |
-|---|---|---|
-| POST | `/enrollments` | Registra una nueva matrícula validando reglas de negocio. |
-| GET | `/enrollments` | Lista todas las matrículas. Acepta filtros `?studentId=1` o `?courseId=1`. |
-| GET | `/students/:studentId/enrollments` | Lista las matrículas de un estudiante específico. |
-| GET | `/courses/:courseId/enrollments` | Lista las matrículas de un curso específico. |
-| DELETE | `/enrollments/:id` | Cancela/Elimina una matrícula por su ID. |
-
-### Ejemplos de Request y Response
-
-#### 1. Crear Matrícula (Éxito)
-**Request (POST `/enrollments`)**
-\`\`\`json
+**Respuesta (200 OK):**
+```json
 {
-  "studentId": 1,
-  "courseId": 2
+  "items": [
+    { "id": 5, "title": "Advanced NestJS Architecture", "level": "advanced" },
+    { "id": 9, "title": "DevOps & CI/CD", "level": "intermediate" },
+    { "id": 3, "title": "Docker Containers", "level": "beginner" },
+    { "id": 7, "title": "GraphQL APIs", "level": "intermediate" }
+  ],
+  "meta": {
+    "total": 9,
+    "page": 1,
+    "limit": 4,
+    "totalPages": 3
+  }
 }
-\`\`\`
-**Response (201 Created)**
-\`\`\`json
-{
-  "id": 1,
-  "studentId": 1,
-  "courseId": 2
-}
-\`\`\`
+```
 
-#### 2. Error por Matrícula Duplicada (Regla de negocio)
-**Request (POST `/enrollments`)** - *Intentando matricular al estudiante 1 en el curso 2 nuevamente.*
-**Response (409 Conflict)**
-\`\`\`json
+### Ejemplo 2: Filtrado de cursos por nivel
+```http
+GET /courses?level=beginner&page=1&limit=5&sortBy=title&order=ASC
+```
+**Respuesta (200 OK):**
+```json
 {
-  "message": "El estudiante ya está matriculado en este curso",
-  "error": "Conflict",
-  "statusCode": 409
+  "items": [
+    { "id": 3, "title": "Docker Containers", "level": "beginner" },
+    { "id": 1, "title": "NestJS Fundamentals", "level": "beginner" },
+    { "id": 6, "title": "React Essentials", "level": "beginner" }
+  ],
+  "meta": {
+    "total": 3,
+    "page": 1,
+    "limit": 5,
+    "totalPages": 1
+  }
 }
-\`\`\`
+```
 
-#### 3. Error por Estudiante Inactivo
-**Request (POST `/enrollments`)** - *Con un studentId cuyo isActive sea false.*
-**Response (400 Bad Request)**
-\`\`\`json
+### Ejemplo 3: Búsqueda textual de matrículas con QueryBuilder
+```http
+GET /enrollments?search=nest&page=1&limit=10
+```
+**Respuesta (200 OK):**
+```json
 {
-  "message": "El estudiante con ID 3 no está activo",
+  "items": [
+    {
+      "id": 1,
+      "student": { "id": 1, "name": "Ana Gomez", "email": "ana@example.com", "career": "Software", "semester": 4, "age": 20, "isActive": true },
+      "course": { "id": 1, "title": "NestJS Fundamentals", "level": "beginner" }
+    },
+    {
+      "id": 5,
+      "student": { "id": 4, "name": "Nestor Castillo", "email": "nestor@example.com", "career": "Software", "semester": 3, "age": 19, "isActive": true },
+      "course": { "id": 3, "title": "Docker Containers", "level": "beginner" }
+    }
+  ],
+  "meta": {
+    "total": 4,
+    "page": 1,
+    "limit": 10,
+    "totalPages": 1
+  }
+}
+```
+
+### Ejemplo 4: Búsqueda combinada (Texto + Estudiante Activo + Paginación)
+```http
+GET /enrollments?search=ana&activeOnly=true&page=1&limit=2
+```
+**Respuesta (200 OK):**
+```json
+{
+  "items": [
+    {
+      "id": 1,
+      "student": { "id": 1, "name": "Ana Gomez", "isActive": true, ... },
+      "course": { "id": 1, "title": "NestJS Fundamentals", ... }
+    },
+    {
+      "id": 2,
+      "student": { "id": 1, "name": "Ana Gomez", "isActive": true, ... },
+      "course": { "id": 2, "title": "TypeScript Pro", ... }
+    }
+  ],
+  "meta": {
+    "total": 4,
+    "page": 1,
+    "limit": 2,
+    "totalPages": 2
+  }
+}
+```
+
+### Ejemplo 5: Petición inválida rechazada por ValidationPipe
+```http
+GET /courses?page=0&limit=200&sortBy=invalido&order=lateral
+```
+**Respuesta (400 Bad Request):**
+```json
+{
+  "message": [
+    "page must not be less than 1",
+    "limit must not be greater than 50",
+    "sortBy must be one of the following values: id, title, level",
+    "order must be one of the following values: ASC, DESC"
+  ],
   "error": "Bad Request",
   "statusCode": 400
 }
-\`\`\`
+```
 
+### Ejemplo 6: Búsqueda sin coincidencias (Colección vacía correcta)
+```http
+GET /enrollments?search=inexistente12345
+```
+**Respuesta (200 OK):**
+```json
 {
-  "name": "Juan Activo",
-  "email": "juan@test.com",
-  "career": "Software",
-  "semester": 5,
-  "isActive": true,
-  "age": 21
+  "items": [],
+  "meta": {
+    "total": 0,
+    "page": 1,
+    "limit": 10,
+    "totalPages": 0
+  }
 }
+```
 
-{
-  "studentId": 1,
-  "courseId": 1
-}
+---
+
+## 3. Justificaciones de Diseño y Respuestas Teóricas
+
+1. **¿Por qué el ordenamiento debe existir incluso cuando el usuario no lo especifica?**
+   Sin un ordenamiento explícito y determinista (`ORDER BY`), PostgreSQL no garantiza el orden de las filas retornadas entre consultas consecutivas. Al paginar con `skip` y `take`, una fila puede repetirse en la página 2 o ser omitida completamente si el motor de base de datos altera el plan de ejecución o el orden interno de las páginas del disco. Un orden por defecto (`id ASC`) asegura estabilidad y consistencia.
+
+2. **¿Qué diferencia hay entre `total` e `items.length`?**
+   - `items.length`: Representa la cantidad de elementos devueltos exclusivamente en la ventana o página actual (como máximo igual a `limit`).
+   - `total`: Representa el número global de registros que existen en la base de datos y que cumplen con las condiciones del filtro, sin importar en qué página se encuentre el cliente.
+
+3. **¿Por qué el filtro debe estar en el DTO y en la consulta a la base de datos, y no aplicarse en memoria con `.filter()`?**
+   Filtrar en memoria requiere descargar todos los registros desde PostgreSQL hacia la aplicación Node.js, saturando la red, aumentando el tiempo de respuesta (latencia) y consumiendo memoria RAM innecesaria en el servidor. Al filtrar en la consulta (`WHERE` / `qb.andWhere`), el motor de la base de datos aprovecha índices, procesa solo los bloques necesarios y transfiere únicamente los datos requeridos.
+
+4. **¿Por qué `GET /enrollments?search=inexistente` devuelve 200 y no 404?**
+   Porque el endpoint apunta al recurso colección `/enrollments`, el cual sí existe en el sistema. Una búsqueda sin resultados simplemente significa que el conjunto de elementos que satisfacen el criterio está vacío (`items: []`). El código `404 Not Found` se reserva para cuando la ruta o un recurso individual específico por ID (`/enrollments/999`) no existe.
+
+5. **Regla de seguridad contra inyección SQL en ordenamiento y búsqueda:**
+   - Para `sortBy`: Los nombres de columna no pueden parametrizarse en SQL estándar. Por lo tanto, se aplica una **lista blanca cerrada** mediante `@IsIn(['id', 'title', 'level'])`. Cualquier valor no permitido se rechaza con `400 Bad Request`.
+   - Para `search`: Se utilizan parámetros nombrados seguros de TypeORM (`:search`) con comodines `%`:
+     ```ts
+     qb.andWhere('(student.name ILIKE :search OR course.title ILIKE :search)', {
+       search: `%${search.trim()}%`,
+     });
+     ```
+     Esto evita concatenar cadenas y neutraliza cualquier intento de inyección SQL (como `' OR 1=1 --`).
+
+---
+
+## 4. Colección Postman y Pruebas HTTP
+
+El repositorio incluye dos herramientas listas para ejecutar la demostración requerida:
+- **Colección Postman:** [CourseHub_Semana06.postman_collection.json](./postman/CourseHub_Semana06.postman_collection.json)
+- **Archivo REST Client:** [coursehub-semana06.http](./coursehub-semana06.http)
+
+### Sembrado automático de datos de prueba
+Para poblar la base de datos con los cursos, estudiantes y matrículas requeridos:
+```bash
+# 1. Iniciar la aplicación
+npm run start:dev
+
+# 2. En otra terminal, ejecutar el sembrador:
+node scripts/seed.js
+```
+
+---
+
+## 5. Endpoints Disponibles en CourseHub API
+
+| Método | Endpoint | Descripción |
+|---|---|---|
+| `GET` | `/courses` | Listado paginado de cursos (`level`, `page`, `limit`, `sortBy`, `order`). |
+| `GET` | `/courses/:id` | Obtener curso por ID. |
+| `POST` | `/courses` | Crear un nuevo curso. |
+| `PATCH` | `/courses/:id` | Actualizar datos de un curso. |
+| `DELETE` | `/courses/:id` | Eliminar curso. |
+| `GET` | `/students` | Listado de estudiantes con filtros. |
+| `GET` | `/students/:id` | Obtener estudiante por ID. |
+| `POST` | `/students` | Registrar nuevo estudiante. |
+| `PATCH` | `/students/:id` | Actualizar estudiante. |
+| `PATCH` | `/students/:id/status` | Cambiar estado `isActive` del estudiante. |
+| `DELETE` | `/students/:id` | Eliminar estudiante activo. |
+| `GET` | `/enrollments` | Listado paginado y búsqueda textual de matrículas (`search`, `studentId`, `courseId`, `activeOnly`, `page`, `limit`). |
+| `POST` | `/enrollments` | Registrar matrícula validando reglas de negocio (estudiante activo, curso existente, no duplicada). |
+| `GET` | `/students/:studentId/enrollments` | Matrículas de un estudiante específico. |
+| `GET` | `/courses/:courseId/enrollments` | Matrículas de un curso específico. |
+| `DELETE` | `/enrollments/:id` | Cancelar matrícula. |

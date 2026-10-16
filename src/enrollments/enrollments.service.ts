@@ -5,6 +5,7 @@ import { Enrollment } from './entities/enrollment.entity.js';
 import { Student } from '../students/entities/student.entity.js';
 import { Course } from '../courses/entities/course.entity.js';
 import { CreateEnrollmentDto } from './dto/create-enrollment.dto.js';
+import { EnrollmentsQueryDto } from './dto/enrollments-query.dto.js';
 
 @Injectable()
 export class EnrollmentsService {
@@ -37,27 +38,68 @@ export class EnrollmentsService {
     return await this.enrollmentsRepo.save(newEnrollment);
   }
 
-  async findAll(studentId?: number, courseId?: number) {
-    const qb = this.enrollmentsRepo.createQueryBuilder('e')
-      .leftJoinAndSelect('e.student', 'student')
-      .leftJoinAndSelect('e.course', 'course');
-      
-    if (studentId) qb.andWhere('student.id = :studentId', { studentId });
-    if (courseId) qb.andWhere('course.id = :courseId', { courseId });
-    
-    return await qb.getMany();
+  async findAll(query: EnrollmentsQueryDto = new EnrollmentsQueryDto()) {
+    const {
+      search,
+      studentId,
+      courseId,
+      activeOnly,
+      page = 1,
+      limit = 10,
+    } = query;
+
+    const qb = this.enrollmentsRepo
+      .createQueryBuilder('enrollment')
+      .leftJoinAndSelect('enrollment.student', 'student')
+      .leftJoinAndSelect('enrollment.course', 'course');
+
+    if (search && search.trim()) {
+      qb.andWhere('(student.name ILIKE :search OR course.title ILIKE :search)', {
+        search: `%${search.trim()}%`,
+      });
+    }
+
+    if (studentId) {
+      qb.andWhere('student.id = :studentId', { studentId });
+    }
+
+    if (courseId) {
+      qb.andWhere('course.id = :courseId', { courseId });
+    }
+
+    if (activeOnly === 'true') {
+      qb.andWhere('student.isActive = :active', { active: true });
+    }
+
+    qb.orderBy('enrollment.id', 'ASC')
+      .skip((page - 1) * limit)
+      .take(limit);
+
+    const [items, total] = await qb.getManyAndCount();
+
+    return {
+      items,
+      meta: {
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit),
+      },
+    };
   }
 
   async findByStudent(studentId: number) {
     const student = await this.studentsRepo.findOne({ where: { id: studentId } });
     if (!student) throw new NotFoundException(`El estudiante con ID ${studentId} no existe`);
-    return this.findAll(studentId, undefined);
+    const result = await this.findAll({ studentId, page: 1, limit: 50 });
+    return result.items;
   }
 
   async findByCourse(courseId: number) {
     const course = await this.coursesRepo.findOne({ where: { id: courseId } });
     if (!course) throw new NotFoundException(`El curso con ID ${courseId} no existe`);
-    return this.findAll(undefined, courseId);
+    const result = await this.findAll({ courseId, page: 1, limit: 50 });
+    return result.items;
   }
 
   async remove(id: number) {

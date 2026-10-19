@@ -1,0 +1,199 @@
+{
+  "info": {
+    "_postman_id": "e81d7f44-93b6-4b2a-bf31-098234abcdef",
+    "name": "CourseHub API - Proyecto Integrador Etapa 2 (Semanas 5-7)",
+    "description": "Colección completa para la demostración de la Etapa 2: Entidades persistentes, integridad referencial, reglas de matrícula, filtros, paginación, búsqueda con QueryBuilder y configuración validada por ambientes.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "01. Health Check & Bienvenida",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/",
+          "host": ["{{baseUrl}}"],
+          "path": [""]
+        },
+        "description": "Comprueba que la API está en línea y configurada."
+      },
+      "response": []
+    },
+    {
+      "name": "02. Crear Curso (POST /courses)",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"title\": \"Arquitectura Limpia con NestJS\",\n  \"level\": \"advanced\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/courses",
+          "host": ["{{baseUrl}}"],
+          "path": ["courses"]
+        },
+        "description": "Crea un curso nuevo y devuelve 201 Created."
+      },
+      "response": []
+    },
+    {
+      "name": "03. Crear Estudiante Activo (POST /students)",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"name\": \"Lucia Fernandez\",\n  \"email\": \"lucia.fernandez@demo.com\",\n  \"career\": \"Ingenieria de Software\",\n  \"semester\": 5,\n  \"age\": 22,\n  \"isActive\": true\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/students",
+          "host": ["{{baseUrl}}"],
+          "path": ["students"]
+        },
+        "description": "Registra un estudiante activo."
+      },
+      "response": []
+    },
+    {
+      "name": "04. Crear Matrícula Válida (POST /enrollments)",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"studentId\": 1,\n  \"courseId\": 2\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/enrollments",
+          "host": ["{{baseUrl}}"],
+          "path": ["enrollments"]
+        },
+        "description": "Crea una matrícula entre un estudiante activo y un curso existente."
+      },
+      "response": []
+    },
+    {
+      "name": "05. Matrícula Duplicada (409 Conflict)",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"studentId\": 1,\n  \"courseId\": 2\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/enrollments",
+          "host": ["{{baseUrl}}"],
+          "path": ["enrollments"]
+        },
+        "description": "Intenta matricular a la misma pareja estudiante-curso; debe ser rechazada con 409 Conflict."
+      },
+      "response": []
+    },
+    {
+      "name": "06. Matrícula con Estudiante Inactivo (400 Bad Request)",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"studentId\": 3,\n  \"courseId\": 1\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/enrollments",
+          "host": ["{{baseUrl}}"],
+          "path": ["enrollments"]
+        },
+        "description": "Intenta matricular a un estudiante inactivo (isActive=false); debe rechazarse con 400 Bad Request."
+      },
+      "response": []
+    },
+    {
+      "name": "07. Matrícula con Estudiante Inexistente (404 Not Found)",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"studentId\": 99999,\n  \"courseId\": 1\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/enrollments",
+          "host": ["{{baseUrl}}"],
+          "path": ["enrollments"]
+        },
+        "description": "Intenta matricular a un estudiante inexistente; debe responder 404 Not Found."
+      },
+      "response": []
+    },
+    {
+      "name": "08. Cursos Paginados y Ordenados (GET /courses)",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/courses?page=1&limit=4&sortBy=title&order=ASC",
+          "host": ["{{baseUrl}}"],
+          "path": ["courses"],
+          "query": [
+            { "key": "page", "value": "1" },
+            { "key": "limit", "value": "4" },
+            { "key": "sortBy", "value": "title" },
+            { "key": "order", "value": "ASC" }
+          ]
+        },
+        "description": "Demuestra paginación, ordenamiento y metadatos de cursos."
+      },
+      "response": []
+    },
+    {
+      "name": "09. Matrículas - Búsqueda y Filtros Combinados (GET /enrollments)",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/enrollments?search=ana&activeOnly=true&page=1&limit=5",
+          "host": ["{{baseUrl}}"],
+          "path": ["enrollments"],
+          "query": [
+            { "key": "search", "value": "ana" },
+            { "key": "activeOnly", "value": "true" },
+            { "key": "page", "value": "1" },
+            { "key": "limit", "value": "5" }
+          ]
+        },
+        "description": "Búsqueda textual insensible a mayúsculas con QueryBuilder combinada con filtro de estudiante activo."
+      },
+      "response": []
+    },
+    {
+      "name": "10. Rechazo por Parámetros Inválidos (400 Bad Request)",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/courses?page=0&limit=200&sortBy=invalido&order=lateral",
+          "host": ["{{baseUrl}}"],
+          "path": ["courses"],
+          "query": [
+            { "key": "page", "value": "0" },
+            { "key": "limit", "value": "200" },
+            { "key": "sortBy", "value": "invalido" },
+            { "key": "order", "value": "lateral" }
+          ]
+        },
+        "description": "Demuestra la protección del ValidationPipe ante parámetros que violan las reglas del DTO."
+      },
+      "response": []
+    }
+  ],
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:3000",
+      "type": "string"
+    }
+  ]
+}

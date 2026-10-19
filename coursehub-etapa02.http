@@ -1,0 +1,117 @@
+### CourseHub API - Proyecto Integrador Etapa 2 (Semanas 5-7)
+@baseUrl = http://localhost:3000
+
+### ================================================================
+### 1. HEALTH CHECK & BIENVENIDA
+### ================================================================
+GET {{baseUrl}}/
+
+### ================================================================
+### 2. CREACIÓN DE CURSO Y ESTUDIANTE ACTIVO
+### ================================================================
+# @name createCourse
+POST {{baseUrl}}/courses
+Content-Type: application/json
+
+{
+  "title": "Arquitectura Limpia con NestJS",
+  "level": "advanced"
+}
+
+###
+# @name createStudent
+POST {{baseUrl}}/students
+Content-Type: application/json
+
+{
+  "name": "Lucia Fernandez",
+  "email": "lucia.fernandez@demo.com",
+  "career": "Ingenieria de Software",
+  "semester": 5,
+  "age": 22,
+  "isActive": true
+}
+
+###
+# @name createInactiveStudent
+POST {{baseUrl}}/students
+Content-Type: application/json
+
+{
+  "name": "Pedro Inactivo",
+  "email": "pedro.inactivo@demo.com",
+  "career": "Sistemas",
+  "semester": 2,
+  "age": 20,
+  "isActive": false
+}
+
+### ================================================================
+### 3. CREAR MATRÍCULA VÁLIDA
+### (Usa IDs existentes de estudiante activo y curso)
+### ================================================================
+POST {{baseUrl}}/enrollments
+Content-Type: application/json
+
+{
+  "studentId": 1,
+  "courseId": 2
+}
+
+### ================================================================
+### 4. RECHAZO: MATRÍCULA DUPLICADA (Debe responder 409 Conflict)
+### ================================================================
+POST {{baseUrl}}/enrollments
+Content-Type: application/json
+
+{
+  "studentId": 1,
+  "courseId": 2
+}
+
+### ================================================================
+### 5. RECHAZO: ESTUDIANTE INACTIVO (Debe responder 400 Bad Request)
+### ================================================================
+POST {{baseUrl}}/enrollments
+Content-Type: application/json
+
+{
+  "studentId": 3,
+  "courseId": 1
+}
+
+### ================================================================
+### 6. RECHAZO: ESTUDIANTE INEXISTENTE (Debe responder 404 Not Found)
+### ================================================================
+POST {{baseUrl}}/enrollments
+Content-Type: application/json
+
+{
+  "studentId": 99999,
+  "courseId": 1
+}
+
+### ================================================================
+### 7. CONSULTAS PAGINADAS Y ORDENADAS: /courses
+### ================================================================
+GET {{baseUrl}}/courses?page=1&limit=4&sortBy=title&order=ASC
+
+### ================================================================
+### 8. CONSULTAS CON FILTRO POR NIVEL: /courses
+### ================================================================
+GET {{baseUrl}}/courses?level=beginner&page=1&limit=5&sortBy=title&order=ASC
+
+### ================================================================
+### 9. BÚSQUEDA Y FILTROS COMBINADOS: /enrollments
+### ================================================================
+GET {{baseUrl}}/enrollments?search=ana&activeOnly=true&page=1&limit=5
+
+### ================================================================
+### 10. ERROR 400 POR PARÁMETROS INVÁLIDOS (ValidationPipe)
+### ================================================================
+GET {{baseUrl}}/courses?page=0&limit=200&sortBy=hack_column&order=diagonal
+
+### ================================================================
+### 11. BÚSQUEDA SIN COINCIDENCIAS (Colección vacía 200 OK)
+### ================================================================
+GET {{baseUrl}}/enrollments?search=termino_inexistente_xyz

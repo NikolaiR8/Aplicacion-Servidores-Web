@@ -1,0 +1,52 @@
+### CourseHub API - Registro y Autenticación de Usuarios
+@baseUrl = http://localhost:3000
+
+### 1. Registrar usuario ana@example.com (Contraseña válida >= 8 caracteres)
+# Respuesta esperada: 201 Created con { id, email, createdAt } sin password ni passwordHash
+POST {{baseUrl}}/auth/register
+Content-Type: application/json
+
+{
+  "email": "ana@example.com",
+  "password": "password123"
+}
+
+### 2. Conflicto por correo duplicado con normalización a minúsculas (ANA@EXAMPLE.COM)
+# Respuesta esperada: 409 Conflict
+POST {{baseUrl}}/auth/register
+Content-Type: application/json
+
+{
+  "email": "ANA@EXAMPLE.COM",
+  "password": "otraPasswordSegura456"
+}
+
+### 3. Validación: Correo electrónico mal formado
+# Respuesta esperada: 400 Bad Request
+POST {{baseUrl}}/auth/register
+Content-Type: application/json
+
+{
+  "email": "correo-mal-formado",
+  "password": "passwordValida123"
+}
+
+### 4. Validación: Contraseña corta de 7 caracteres
+# Respuesta esperada: 400 Bad Request
+POST {{baseUrl}}/auth/register
+Content-Type: application/json
+
+{
+  "email": "usuario.valido@example.com",
+  "password": "1234567"
+}
+
+### 5. Validación combinada: Correo mal formado y contraseña de 7 caracteres
+# Respuesta esperada: 400 Bad Request (No crea usuario)
+POST {{baseUrl}}/auth/register
+Content-Type: application/json
+
+{
+  "email": "correo-invalido",
+  "password": "1234567"
+}

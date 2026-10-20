@@ -1,52 +1,125 @@
-### CourseHub API - Registro y Autenticación de Usuarios
+### ==============================================================================
+### CourseHub API · Etapa 3 - Semana 8: Cuentas y Autenticación Inicial
+### Base URL: http://localhost:3000
+### ==============================================================================
 @baseUrl = http://localhost:3000
 
-### 1. Registrar usuario ana@example.com (Contraseña válida >= 8 caracteres)
-# Respuesta esperada: 201 Created con { id, email, createdAt } sin password ni passwordHash
+### ------------------------------------------------------------------------------
+### PASO 1 DE DEMOSTRACIÓN: Registro válido y respuesta segura (sin hash)
+### ------------------------------------------------------------------------------
+# Debe responder 201 Created.
+# No debe incluir ni 'password' ni 'passwordHash' en la respuesta HTTP.
 POST {{baseUrl}}/auth/register
 Content-Type: application/json
 
 {
-  "email": "ana@example.com",
-  "password": "password123"
+  "email": "demostracion@example.com",
+  "password": "PasswordSegura123!"
 }
 
-### 2. Conflicto por correo duplicado con normalización a minúsculas (ANA@EXAMPLE.COM)
-# Respuesta esperada: 409 Conflict
+### ------------------------------------------------------------------------------
+### PASO 2 DE DEMOSTRACIÓN: Verificación de columna de hash en base de datos local
+### ------------------------------------------------------------------------------
+# Ejecutar en terminal (pnpm / node) o cliente SQL (psql, DBeaver, pgAdmin):
+# SELECT id, email, password_hash, created_at FROM users WHERE email = 'demostracion@example.com';
+# O bien ejecutar el script de verificación incluido:
+# node scripts/verify-db.js
+
+### ------------------------------------------------------------------------------
+### PASO 3 DE DEMOSTRACIÓN: Conflicto por correo duplicado con mayúsculas/minúsculas
+### ------------------------------------------------------------------------------
+# Demuestra que el correo se normaliza a minúsculas antes de buscar o guardar.
+# Debe responder 409 Conflict.
 POST {{baseUrl}}/auth/register
 Content-Type: application/json
 
 {
-  "email": "ANA@EXAMPLE.COM",
-  "password": "otraPasswordSegura456"
+  "email": "DEMOSTRACION@EXAMPLE.COM",
+  "password": "OtraPasswordDiferente999!"
 }
 
-### 3. Validación: Correo electrónico mal formado
-# Respuesta esperada: 400 Bad Request
+### ------------------------------------------------------------------------------
+### PASO 4 DE DEMOSTRACIÓN: Inicio de sesión correcto
+### ------------------------------------------------------------------------------
+# Debe responder 200 OK con mensaje y datos seguros del usuario.
+# No genera JWT ni guard todavía (queda listo para Semana 9).
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "email": "demostracion@example.com",
+  "password": "PasswordSegura123!"
+}
+
+### ------------------------------------------------------------------------------
+### PASO 5A DE DEMOSTRACIÓN: Login con contraseña incorrecta
+### ------------------------------------------------------------------------------
+# Debe responder 401 Unauthorized con mensaje genérico ("Credenciales inválidas").
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "email": "demostracion@example.com",
+  "password": "PasswordEquivocada456!"
+}
+
+### ------------------------------------------------------------------------------
+### PASO 5B DE DEMOSTRACIÓN: Login con correo inexistente
+### ------------------------------------------------------------------------------
+# Debe responder EXACTAMENTE el mismo 401 Unauthorized y el mismo mensaje genérico.
+# No revela si el correo existe o no en la base de datos (seguridad contra enumeración).
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "email": "noexiste.cuenta@example.com",
+  "password": "PasswordCualquiera123!"
+}
+
+### ------------------------------------------------------------------------------
+### PASO 6A DE DEMOSTRACIÓN: Cuerpo inválido - Formato de correo incorrecto
+### ------------------------------------------------------------------------------
+# Debe responder 400 Bad Request por validación del DTO antes de consultar la BD.
 POST {{baseUrl}}/auth/register
 Content-Type: application/json
 
 {
-  "email": "correo-mal-formado",
-  "password": "passwordValida123"
+  "email": "correo-sin-formato-valido",
+  "password": "PasswordValida123!"
 }
 
-### 4. Validación: Contraseña corta de 7 caracteres
-# Respuesta esperada: 400 Bad Request
+### ------------------------------------------------------------------------------
+### PASO 6B DE DEMOSTRACIÓN: Cuerpo inválido - Contraseña menor a 8 caracteres
+### ------------------------------------------------------------------------------
+# Debe responder 400 Bad Request por validación del DTO (@MinLength(8)).
 POST {{baseUrl}}/auth/register
 Content-Type: application/json
 
 {
-  "email": "usuario.valido@example.com",
-  "password": "1234567"
+  "email": "nuevo.usuario@example.com",
+  "password": "12345"
 }
 
-### 5. Validación combinada: Correo mal formado y contraseña de 7 caracteres
-# Respuesta esperada: 400 Bad Request (No crea usuario)
-POST {{baseUrl}}/auth/register
+### ------------------------------------------------------------------------------
+### PASO 6C DE DEMOSTRACIÓN: Cuerpo inválido en Login - Campos vacíos
+### ------------------------------------------------------------------------------
+# Debe responder 400 Bad Request antes de buscar en la BD.
+POST {{baseUrl}}/auth/login
 Content-Type: application/json
 
 {
-  "email": "correo-invalido",
-  "password": "1234567"
+  "email": "",
+  "password": ""
 }
+
+### ------------------------------------------------------------------------------
+### COMPROBACIÓN EXTRA: Rutas existentes siguen funcionando intactas
+### ------------------------------------------------------------------------------
+### Cursos
+GET {{baseUrl}}/courses
+
+### Estudiantes
+GET {{baseUrl}}/students
+
+### Matrículas
+GET {{baseUrl}}/enrollments

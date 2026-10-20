@@ -66,6 +66,15 @@ export class UsersService {
     });
   }
 
+  async findByEmailWithPassword(email: string): Promise<User | null> {
+    const normalizedEmail = email.trim().toLowerCase();
+    return await this.usersRepository
+      .createQueryBuilder('user')
+      .addSelect('user.passwordHash')
+      .where('user.email = :email', { email: normalizedEmail })
+      .getOne();
+  }
+
   async findOne(id: number): Promise<UserResponseDto | null> {
     const user = await this.usersRepository.findOne({ where: { id } });
     if (!user) {

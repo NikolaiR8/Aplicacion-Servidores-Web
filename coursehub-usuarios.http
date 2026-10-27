@@ -39,10 +39,12 @@ Content-Type: application/json
 }
 
 ### ------------------------------------------------------------------------------
-### PASO 4 DE DEMOSTRACIÓN: Inicio de sesión correcto
+### PASO 4 DE DEMOSTRACIÓN: Inicio de sesión correcto y emisión de token JWT (Sesión 17)
 ### ------------------------------------------------------------------------------
-# Debe responder 200 OK con mensaje y datos seguros del usuario.
-# No genera JWT ni guard todavía (queda listo para Semana 9).
+# Debe responder 200 OK con:
+# - accessToken: Token JWT firmado (Header, Payload con sub/email/iat/exp, Firma).
+# - user: Datos seguros del usuario ({ id, email, createdAt }).
+# NOTA DE SEGURIDAD: Nunca expongas este token públicamente ni en repositorios.
 POST {{baseUrl}}/auth/login
 Content-Type: application/json
 
@@ -112,14 +114,95 @@ Content-Type: application/json
   "password": ""
 }
 
+### ==============================================================================
+### PEA: OBTENER Y VALIDAR EL JWT · GUÍA DE PRUEBAS PASO A PASO
+### ==============================================================================
+# INSTRUCCIÓN: Ejecuta el Paso 3, copia el 'accessToken' recibido y pégalo abajo:
+@authToken = pegue_aqui_el_accessToken_obtenido_en_el_login
+
 ### ------------------------------------------------------------------------------
-### COMPROBACIÓN EXTRA: Rutas existentes siguen funcionando intactas
+### PASO 2 (PEA): Registrar una cuenta de práctica
 ### ------------------------------------------------------------------------------
-### Cursos
+# Responde 201 Created con { id, email, createdAt } (sin hash)
+POST {{baseUrl}}/auth/register
+Content-Type: application/json
+
+{
+  "email": "estudiante.pea@example.com",
+  "password": "PasswordPea2026!"
+}
+
+### ------------------------------------------------------------------------------
+### PASO 3 (PEA): Hacer login y emitir accessToken
+### ------------------------------------------------------------------------------
+# Responde 200 OK con { accessToken, user }
+# Copia el token devuelto y colócalo en la variable @authToken de arriba
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "email": "estudiante.pea@example.com",
+  "password": "PasswordPea2026!"
+}
+
+### ------------------------------------------------------------------------------
+### PASO 4 (PEA): Consultar GET /auth/me con encabezado Bearer válido
+### ------------------------------------------------------------------------------
+# Responde 200 OK con los datos del usuario autenticado ({ id, email, createdAt })
+GET {{baseUrl}}/auth/me
+Authorization: Bearer {{authToken}}
+
+### ------------------------------------------------------------------------------
+### PASO 5A (PEA): Consultar GET /auth/me SIN encabezado Authorization
+### ------------------------------------------------------------------------------
+# Responde 401 Unauthorized ("Token no proporcionado")
+GET {{baseUrl}}/auth/me
+
+### ------------------------------------------------------------------------------
+### PASO 5B (PEA): Consultar GET /auth/me con token alterado / corrupto
+### ------------------------------------------------------------------------------
+# Responde 401 Unauthorized ("Token inválido o expirado")
+GET {{baseUrl}}/auth/me
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.tokenModificadoCorrupto.FirmaInvalida
+
+### ------------------------------------------------------------------------------
+### PASO 6 (PEA): Invocar ruta de negocio protegida SIN token
+### ------------------------------------------------------------------------------
+# Responde 401 Unauthorized. Comprueba que NO crea el curso ni altera la base de datos.
+POST {{baseUrl}}/courses
+Content-Type: application/json
+
+{
+  "title": "Curso No Autorizado",
+  "level": "Principiante"
+}
+
+### PASO 6 (Verificación): Listar cursos para confirmar que los datos siguen intactos
 GET {{baseUrl}}/courses
 
-### Estudiantes
-GET {{baseUrl}}/students
+### ------------------------------------------------------------------------------
+### PASO 7A (PEA): Invocar ruta protegida CON token pero datos inválidos (Aplica DTO)
+### ------------------------------------------------------------------------------
+# Responde 400 Bad Request demostrando que los DTOs y validaciones se siguen ejecutando
+POST {{baseUrl}}/courses
+Authorization: Bearer {{authToken}}
+Content-Type: application/json
 
-### Matrículas
-GET {{baseUrl}}/enrollments
+{
+  "title": "",
+  "level": "NivelInvalido"
+}
+
+### ------------------------------------------------------------------------------
+### PASO 7B (PEA): Invocar ruta protegida CON token válido y datos válidos
+### ------------------------------------------------------------------------------
+# Responde 201 Created guardando el nuevo curso correctamente
+POST {{baseUrl}}/courses
+Authorization: Bearer {{authToken}}
+Content-Type: application/json
+
+{
+  "title": "Arquitectura de Software con NestJS",
+  "level": "Avanzado"
+}
+

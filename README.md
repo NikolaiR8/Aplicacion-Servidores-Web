@@ -53,6 +53,8 @@ La aplicación valida de forma estricta las variables de entorno al iniciar medi
 | `DB_NAME` | `string` | **Sí** | - | Nombre de la base de datos (ej. `coursehub`). |
 | `DB_USER` | `string` | **Sí** | - | Usuario de la base de datos (ej. `postgres`). |
 | `DB_PASSWORD` | `string` | Condicional | - | Contraseña. Opcional/vacía en desarrollo local, pero **obligatoria y no vacía** si `NODE_ENV=production`. |
+| `JWT_SECRET` | `string` | **Sí** | - | Clave secreta para la firma y verificación de tokens JWT (mínimo 32 caracteres). Nunca compartir ni versionar en Git. |
+| `JWT_EXPIRES_IN` | `string` | No | `'15m'` | Tiempo de vida de los access tokens emitidos (ej. `'15m'`, `'1h'`). |
 
 ### 4. Política de Sincronización TypeORM por Ambiente
 
@@ -95,6 +97,52 @@ npm run test
 | `GET` | `/enrollments` | Búsqueda y filtrado de matrículas | `search`, `studentId`, `courseId`, `activeOnly`, `page`, `limit` |
 | `POST` | `/enrollments` | Registrar matrícula | `{ "studentId": number, "courseId": number }` |
 | `DELETE` | `/enrollments/:id` | Cancelar matrícula | Param `id` |
+| `POST` | `/auth/register` | Registro de usuario | `{ "email": string, "password": string }` |
+| `POST` | `/auth/login` | Inicio de sesión y emisión de token JWT | `{ "email": string, "password": string }` |
+
+---
+
+### 🔐 Contrato de Autenticación (`POST /auth/login`) · Sesión 17
+
+Valida las credenciales del usuario con **bcrypt** y, tras una comprobación exitosa, emite un **JSON Web Token (JWT)** de acceso temporal con una carga útil mínima.
+
+- **Entrada (`POST /auth/login`)**:
+  ```json
+  {
+    "email": "ana@example.com",
+    "password": "PasswordSegura123!"
+  }
+  ```
+- **Salida Exitosa (`200 OK`)**:
+  ```json
+  {
+    "accessToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+    "user": {
+      "id": 1,
+      "email": "ana@example.com",
+      "createdAt": "2026-10-27T18:00:00.000Z"
+    }
+  }
+  ```
+- **Estructura del Payload JWT emitido (`JwtPayload`)**:
+  - `sub`: Identificador numérico del usuario (`user.id`).
+  - `email`: Correo institucional/personal normalizado.
+  - `iat`: Timestamp de emisión (añadido automáticamente por la librería).
+  - `exp`: Timestamp de expiración (calculado según `JWT_EXPIRES_IN`, aprox. 15 minutos).
+- **Caducidad aproximada**: 15 minutos (`15m`).
+- **Respuesta ante Credenciales Inválidas (`401 Unauthorized`)**:
+  ```json
+  {
+    "statusCode": 401,
+    "message": "Credenciales inválidas",
+    "error": "Unauthorized"
+  }
+  ```
+  *(Devuelve 401 tanto para contraseña errónea como para usuario inexistente, sin emitir ningún token)*.
+- **Advertencia de Seguridad**:
+  - Un token JWT está **firmado, no cifrado**. Su carga útil (payload) puede ser decodificada y leída por cualquiera que tenga acceso al token (Base64Url).
+  - **NUNCA** incluir datos sensibles en el payload (como `password`, `passwordHash`, números bancarios o secretos de entorno).
+  - Los tokens son credenciales vivas: **NUNCA** compartas ni publiques tokens en repositorios, capturas públicas o chats. Trátalos con la misma confidencialidad que una sesión activa.
 
 ---
 

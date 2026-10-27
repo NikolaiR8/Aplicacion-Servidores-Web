@@ -1,5 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { UnauthorizedException } from '@nestjs/common';
+import { JwtService } from '@nestjs/jwt';
 import bcrypt from 'bcryptjs';
 import { AuthService } from './auth.service.js';
 import { UsersService } from '../users/users.service.js';
@@ -10,11 +11,17 @@ describe('AuthService', () => {
     create: any;
     findByEmailWithPassword: any;
   };
+  let jwtService: {
+    signAsync: any;
+  };
 
   beforeEach(async () => {
     usersService = {
       create: vi.fn(),
       findByEmailWithPassword: vi.fn(),
+    };
+    jwtService = {
+      signAsync: vi.fn().mockResolvedValue('mocked-jwt-token'),
     };
 
     const module: TestingModule = await Test.createTestingModule({
@@ -23,6 +30,10 @@ describe('AuthService', () => {
         {
           provide: UsersService,
           useValue: usersService,
+        },
+        {
+          provide: JwtService,
+          useValue: jwtService,
         },
       ],
     }).compile();
@@ -57,7 +68,7 @@ describe('AuthService', () => {
       ).rejects.toThrow(UnauthorizedException);
     });
 
-    it('should return user info on valid credentials', async () => {
+    it('should return accessToken and safe user info on valid credentials', async () => {
       const hash = await bcrypt.hash('correctPassword', 10);
       const createdAt = new Date();
       usersService.findByEmailWithPassword.mockResolvedValue({
@@ -72,8 +83,12 @@ describe('AuthService', () => {
         password: 'correctPassword',
       });
 
+      expect(jwtService.signAsync).toHaveBeenCalledWith({
+        sub: 1,
+        email: 'test@example.com',
+      });
       expect(result).toEqual({
-        message: 'Inicio de sesión exitoso',
+        accessToken: 'mocked-jwt-token',
         user: {
           id: 1,
           email: 'test@example.com',

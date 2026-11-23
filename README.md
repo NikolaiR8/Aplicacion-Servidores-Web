@@ -53,6 +53,8 @@ La aplicación valida de forma estricta las variables de entorno al iniciar medi
 | `DB_NAME` | `string` | **Sí** | - | Nombre de la base de datos (ej. `coursehub`). |
 | `DB_USER` | `string` | **Sí** | - | Usuario de la base de datos (ej. `postgres`). |
 | `DB_PASSWORD` | `string` | Condicional | - | Contraseña. Opcional/vacía en desarrollo local, pero **obligatoria y no vacía** si `NODE_ENV=production`. |
+| `JWT_SECRET` | `string` | **Sí** | - | Clave aleatoria de al menos 32 caracteres para firmar JWT. |
+| `CORS_ORIGINS` | `string` | No | `http://localhost:5173` | Lista separada por comas de los orígenes web autorizados. |
 
 ### 4. Política de Sincronización TypeORM por Ambiente
 
@@ -107,6 +109,25 @@ npm run test
 5. **Protección contra inyección SQL**:
    - `sortBy`: Protegido mediante lista blanca `@IsIn(['id', 'title', 'level'])`.
    - `search`: Parametrizado mediante comodines `:search` en el `QueryBuilder` de TypeORM (`ILIKE :search`).
+
+---
+
+## 🔐 Autorización y seguridad
+
+### Roles y propiedad
+
+- Las cuentas nuevas reciben `student` por defecto.
+- `admin` puede crear, actualizar y eliminar cursos.
+- `teacher` puede crear cursos y actualizar únicamente los cursos cuyo `createdByUserId` coincide con su identidad.
+- `student` no puede realizar operaciones de creación, actualización o eliminación.
+- `DELETE /courses/:id` es una operación exclusiva de administradores.
+- El registro y login permanecen públicos. El login admite como máximo 5 intentos por minuto por cliente.
+
+### HTTP, CORS y HTTPS
+
+- CORS admite únicamente los valores de `CORS_ORIGINS`. CORS no reemplaza JWT ni autorización.
+- Las rutas protegidas devuelven `401` sin una identidad JWT válida y `403` con una identidad que carece del permiso requerido.
+- La API debe ejecutarse detrás de HTTPS/TLS en producción. El secreto JWT y las credenciales de base de datos solo pueden vivir en variables de entorno.
 
 ---
 

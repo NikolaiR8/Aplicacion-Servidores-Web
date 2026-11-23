@@ -9,6 +9,7 @@ import {
   Query,
   Req,
   UseGuards,
+  ParseIntPipe,
 } from '@nestjs/common';
 
 import { CoursesService } from './courses.service.js';
@@ -20,10 +21,14 @@ import { Roles } from '../auth/decorators/roles.decorator.js';
 import { RolesGuard } from '../auth/guards/roles.guard.js';
 import { AuthenticatedUser } from '../auth/authenticated-user.interface.js';
 import { UserRole } from '../users/user-role.enum.js';
+import { UpdateCourseUseCase } from './use-cases/update-course.use-case.js';
 
 @Controller('courses')
 export class CoursesController {
-  constructor(private readonly coursesService: CoursesService) {}
+  constructor(
+    private readonly coursesService: CoursesService,
+    private readonly updateCourseUseCase: UpdateCourseUseCase,
+  ) {}
 
   @Get()
   findAll(@Query() query: CoursesQueryDto) {
@@ -31,7 +36,7 @@ export class CoursesController {
   }
 
   @Get(':id')
-  findOne(@Param('id') id: string) {
+  findOne(@Param('id', ParseIntPipe) id: number) {
     return this.coursesService.findOne(id);
   }
 
@@ -49,17 +54,17 @@ export class CoursesController {
   @UseGuards(AuthGuard, RolesGuard)
   @Roles(UserRole.ADMIN, UserRole.TEACHER)
   update(
-    @Param('id') id: string,
+    @Param('id', ParseIntPipe) id: number,
     @Body() body: UpdateCourseDto,
     @Req() request: { user: AuthenticatedUser },
   ) {
-    return this.coursesService.update(id, body, request.user);
+    return this.updateCourseUseCase.execute(id, body, request.user);
   }
 
   @Delete(':id')
   @UseGuards(AuthGuard, RolesGuard)
   @Roles(UserRole.ADMIN)
-  remove(@Param('id') id: string) {
+  remove(@Param('id', ParseIntPipe) id: number) {
     return this.coursesService.remove(id);
   }
 }

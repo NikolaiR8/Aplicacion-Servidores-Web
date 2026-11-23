@@ -175,6 +175,15 @@ Valida las credenciales del usuario con **bcrypt** y, tras una comprobación exi
 - Las rutas protegidas devuelven `401` sin una identidad JWT válida y `403` con una identidad que carece del permiso requerido.
 - La API debe ejecutarse detrás de HTTPS/TLS en producción. El secreto JWT y las credenciales de base de datos solo pueden vivir en variables de entorno.
 
+## 🏗️ Arquitectura y componentes transversales
+
+- `RequestLoggerMiddleware` registra método, ruta, estado y duración sin registrar cabeceras, tokens ni cuerpos.
+- `HttpErrorFilter` aplica una respuesta uniforme; los errores internos no exponen trazas ni datos de infraestructura.
+- `TimingInterceptor` mide el tiempo de respuesta de forma centralizada.
+- `ValidationPipe` y `ParseIntPipe` validan entradas antes del controlador.
+- La actualización de cursos pasa por `UpdateCourseUseCase`; la regla de propiedad vive fuera de HTTP y TypeORM.
+- `COURSE_REPOSITORY` es el puerto pequeño del caso de uso y `TypeOrmCourseRepository` es el adaptador de persistencia.
+
 ---
 
 ## 📦 Colecciones de Demostración y Pruebas

@@ -1,0 +1,9 @@
+import { Course } from './entities/course.entity.js';
+
+export const COURSE_REPOSITORY = Symbol('COURSE_REPOSITORY');
+
+export interface CourseRepository {
+  findById(id: number): Promise<Course | null>;
+  save(course: Course): Promise<Course>;
+  remove(course: Course): Promise<Course>;
+}

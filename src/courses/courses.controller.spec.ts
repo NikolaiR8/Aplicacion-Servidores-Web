@@ -1,6 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { CoursesController } from './courses.controller.js';
 import { CoursesService } from './courses.service.js';
+import { UpdateCourseUseCase } from './use-cases/update-course.use-case.js';
 import { AuthGuard } from '../auth/guards/auth.guard.js';
 
 describe('CoursesController', () => {
@@ -19,6 +20,10 @@ describe('CoursesController', () => {
             update: vi.fn(),
             remove: vi.fn(),
           },
+        },
+        {
+          provide: UpdateCourseUseCase,
+          useValue: { execute: vi.fn() },
         },
       ],
     })

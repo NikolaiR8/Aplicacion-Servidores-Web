@@ -13,6 +13,7 @@ import { CreateUserDto } from '../users/dto/create-user.dto.js';
 import { LoginDto } from './dto/login.dto.js';
 import { UserResponseDto } from '../users/dto/user-response.dto.js';
 import { AuthGuard } from './guards/auth.guard.js';
+import { Throttle } from '@nestjs/throttler';
 
 @Controller('auth')
 export class AuthController {
@@ -25,6 +26,7 @@ export class AuthController {
   }
 
   @Post('login')
+  @Throttle({ default: { limit: 5, ttl: 60_000 } })
   @HttpCode(HttpStatus.OK)
   async login(
     @Body() loginDto: LoginDto,

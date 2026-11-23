@@ -29,14 +29,23 @@ export class AuthService {
       throw new UnauthorizedException('Credenciales inválidas');
     }
 
-    return { id: user.id, email: user.email, createdAt: user.createdAt };
+    return {
+      id: user.id,
+      email: user.email,
+      createdAt: user.createdAt,
+      role: user.role,
+    };
   }
 
   async login(
     loginDto: LoginDto,
   ): Promise<{ accessToken: string; user: UserResponseDto }> {
     const user = await this.validateCredentials(loginDto.email, loginDto.password);
-    const payload: JwtPayload = { sub: user.id, email: user.email };
+    const payload: JwtPayload = {
+      sub: user.id,
+      email: user.email,
+      role: user.role,
+    };
 
     return {
       accessToken: await this.jwtService.signAsync(payload),

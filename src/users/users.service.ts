@@ -2,6 +2,7 @@ import {
   Injectable,
   ConflictException,
   InternalServerErrorException,
+  NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
@@ -10,6 +11,7 @@ import bcrypt from 'bcryptjs';
 import { User } from './entities/user.entity.js';
 import { CreateUserDto } from './dto/create-user.dto.js';
 import { UserResponseDto } from './dto/user-response.dto.js';
+import { UserRole } from './user-role.enum.js';
 
 @Injectable()
 export class UsersService {
@@ -37,6 +39,7 @@ export class UsersService {
     const user = this.usersRepository.create({
       email: normalizedEmail,
       passwordHash,
+      role: UserRole.STUDENT,
     });
 
     try {
@@ -46,6 +49,7 @@ export class UsersService {
         id: savedUser.id,
         email: savedUser.email,
         createdAt: savedUser.createdAt,
+        role: savedUser.role,
       };
     } catch (error: any) {
       if (error?.code === '23505') {
@@ -84,6 +88,20 @@ export class UsersService {
       id: user.id,
       email: user.email,
       createdAt: user.createdAt,
+      role: user.role,
+    };
+  }
+
+  async setRole(id: number, role: UserRole): Promise<UserResponseDto> {
+    const user = await this.usersRepository.findOne({ where: { id } });
+    if (!user) throw new NotFoundException(`User ${id} not found`);
+    user.role = role;
+    const savedUser = await this.usersRepository.save(user);
+    return {
+      id: savedUser.id,
+      email: savedUser.email,
+      createdAt: savedUser.createdAt,
+      role: savedUser.role,
     };
   }
 }

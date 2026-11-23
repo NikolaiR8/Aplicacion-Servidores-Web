@@ -7,6 +7,7 @@ import {
   Patch,
   Post,
   Query,
+  Req,
   UseGuards,
 } from '@nestjs/common';
 
@@ -15,6 +16,10 @@ import { CreateCourseDto } from './dto/create-course.dto.js';
 import { UpdateCourseDto } from './dto/update-course.dto.js';
 import { CoursesQueryDto } from './dto/courses-query.dto.js';
 import { AuthGuard } from '../auth/guards/auth.guard.js';
+import { Roles } from '../auth/decorators/roles.decorator.js';
+import { RolesGuard } from '../auth/guards/roles.guard.js';
+import { AuthenticatedUser } from '../auth/authenticated-user.interface.js';
+import { UserRole } from '../users/user-role.enum.js';
 
 @Controller('courses')
 export class CoursesController {
@@ -31,13 +36,17 @@ export class CoursesController {
   }
 
   @Post()
-  @UseGuards(AuthGuard)
-  create(@Body() createCourseDto: CreateCourseDto) {
-    return this.coursesService.create(createCourseDto);
+  @UseGuards(AuthGuard, RolesGuard)
+  @Roles(UserRole.ADMIN, UserRole.TEACHER)
+  create(
+    @Body() createCourseDto: CreateCourseDto,
+    @Req() request: { user: AuthenticatedUser },
+  ) {
+    return this.coursesService.create(createCourseDto, request.user);
   }
 
   @Patch(':id')
-  @UseGuards(JwtAuthGuard, RolesGuard)
+  @UseGuards(AuthGuard, RolesGuard)
   @Roles(UserRole.ADMIN, UserRole.TEACHER)
   update(
     @Param('id') id: string,
@@ -48,7 +57,7 @@ export class CoursesController {
   }
 
   @Delete(':id')
-  @UseGuards(JwtAuthGuard, RolesGuard)
+  @UseGuards(AuthGuard, RolesGuard)
   @Roles(UserRole.ADMIN)
   remove(@Param('id') id: string) {
     return this.coursesService.remove(id);

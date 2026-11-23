@@ -12,8 +12,6 @@ import { StudentsModule } from './students/students.module.js';
 import { EnrollmentsModule } from './enrollments/enrollments.module.js';
 import { UsersModule } from './users/users.module.js';
 import { AuthModule } from './auth/auth.module.js';
-import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
-import { APP_GUARD } from '@nestjs/core';
 
 @Module({
   imports: [
@@ -30,7 +28,7 @@ import { APP_GUARD } from '@nestjs/core';
         DB_USER: Joi.string().required(),
         DB_PASSWORD: Joi.string().allow('').required(),
         JWT_SECRET: Joi.string().min(32).required(),
-        CORS_ORIGINS: Joi.string().default('http://localhost:5173'),
+        JWT_EXPIRES_IN: Joi.string().default('15m'),
       }),
     }),
     ThrottlerModule.forRoot([{ ttl: 60_000, limit: 20 }]),

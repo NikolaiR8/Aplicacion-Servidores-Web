@@ -1,11 +1,10 @@
 import {
-  Column,
   Entity,
-  OneToMany,
   PrimaryGeneratedColumn,
+  Column,
+  CreateDateColumn,
 } from 'typeorm';
-import { Course } from '../../courses/entities/course.entity.js';
-import { UserRole } from '../user-role.enum.js';
+import { Exclude } from 'class-transformer';
 
 @Entity('users')
 export class User {
@@ -15,12 +14,10 @@ export class User {
   @Column({ unique: true })
   email: string;
 
-  @Column()
+  @Exclude()
+  @Column({ name: 'password_hash', select: false })
   passwordHash: string;
 
-  @Column({ type: 'enum', enum: UserRole, default: UserRole.STUDENT })
-  role: UserRole;
-
-  @OneToMany(() => Course, (course) => course.createdBy)
-  courses: Course[];
+  @CreateDateColumn({ name: 'created_at' })
+  createdAt: Date;
 }

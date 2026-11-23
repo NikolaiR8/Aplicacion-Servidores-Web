@@ -1,44 +1,40 @@
 import {
-  Body,
   Controller,
-  Param,
-  ParseIntPipe,
-  Patch,
   Post,
+  Get,
+  Body,
+  HttpCode,
+  HttpStatus,
   UseGuards,
+  Req,
 } from '@nestjs/common';
-import { Throttle } from '@nestjs/throttler';
-import { UsersService } from '../users/users.service.js';
-import { RegisterDto } from '../users/dto/register.dto.js';
-import { SetRoleDto } from '../users/dto/set-role.dto.js';
+import { AuthService } from './auth.service.js';
+import { CreateUserDto } from '../users/dto/create-user.dto.js';
 import { LoginDto } from './dto/login.dto.js';
-import { JwtAuthGuard } from './guards/jwt-auth.guard.js';
-import { RolesGuard } from './guards/roles.guard.js';
-import { Roles } from './decorators/roles.decorator.js';
-import { UserRole } from '../users/user-role.enum.js';
+import { UserResponseDto } from '../users/dto/user-response.dto.js';
+import { AuthGuard } from './guards/auth.guard.js';
 
 @Controller('auth')
 export class AuthController {
-  constructor(private readonly usersService: UsersService) {}
+  constructor(private readonly authService: AuthService) {}
 
   @Post('register')
-  register(@Body() dto: RegisterDto) {
-    return this.usersService.register(dto);
+  @HttpCode(HttpStatus.CREATED)
+  async register(@Body() createUserDto: CreateUserDto): Promise<UserResponseDto> {
+    return await this.authService.register(createUserDto);
   }
 
-  @Throttle({ default: { limit: 5, ttl: 60_000 } })
   @Post('login')
-  login(@Body() dto: LoginDto) {
-    return this.usersService.login(dto.email, dto.password);
+  @HttpCode(HttpStatus.OK)
+  async login(
+    @Body() loginDto: LoginDto,
+  ): Promise<{ accessToken: string; user: UserResponseDto }> {
+    return await this.authService.login(loginDto);
   }
 
-  @Patch('users/:id/role')
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(UserRole.ADMIN)
-  setRole(
-    @Param('id', ParseIntPipe) id: number,
-    @Body() dto: SetRoleDto,
-  ) {
-    return this.usersService.setRole(id, dto.role);
+  @Get('me')
+  @UseGuards(AuthGuard)
+  async getProfile(@Req() req: any): Promise<UserResponseDto> {
+    return await this.authService.getProfile(req.user.sub);
   }
 }

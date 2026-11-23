@@ -7,7 +7,6 @@ import {
   Patch,
   Post,
   Query,
-  Req,
   UseGuards,
 } from '@nestjs/common';
 
@@ -15,11 +14,7 @@ import { CoursesService } from './courses.service.js';
 import { CreateCourseDto } from './dto/create-course.dto.js';
 import { UpdateCourseDto } from './dto/update-course.dto.js';
 import { CoursesQueryDto } from './dto/courses-query.dto.js';
-import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard.js';
-import { RolesGuard } from '../auth/guards/roles.guard.js';
-import { Roles } from '../auth/decorators/roles.decorator.js';
-import { UserRole } from '../users/user-role.enum.js';
-import { AuthenticatedUser } from '../auth/authenticated-user.interface.js';
+import { AuthGuard } from '../auth/guards/auth.guard.js';
 
 @Controller('courses')
 export class CoursesController {
@@ -36,13 +31,9 @@ export class CoursesController {
   }
 
   @Post()
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(UserRole.ADMIN, UserRole.TEACHER)
-  create(
-    @Body() createCourseDto: CreateCourseDto,
-    @Req() request: { user: AuthenticatedUser },
-  ) {
-    return this.coursesService.create(createCourseDto, request.user);
+  @UseGuards(AuthGuard)
+  create(@Body() createCourseDto: CreateCourseDto) {
+    return this.coursesService.create(createCourseDto);
   }
 
   @Patch(':id')

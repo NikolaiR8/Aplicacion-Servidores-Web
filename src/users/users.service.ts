@@ -1,62 +1,89 @@
 import {
-  ConflictException,
   Injectable,
-  NotFoundException,
-  UnauthorizedException,
+  ConflictException,
+  InternalServerErrorException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import * as bcrypt from 'bcrypt';
-import { JwtService } from '@nestjs/jwt';
+import bcrypt from 'bcryptjs';
+
 import { User } from './entities/user.entity.js';
-import { UserRole } from './user-role.enum.js';
-import { RegisterDto } from './dto/register.dto.js';
+import { CreateUserDto } from './dto/create-user.dto.js';
+import { UserResponseDto } from './dto/user-response.dto.js';
 
 @Injectable()
 export class UsersService {
   constructor(
     @InjectRepository(User)
     private readonly usersRepository: Repository<User>,
-    private readonly jwtService: JwtService,
   ) {}
 
-  async register(dto: RegisterDto) {
-    const existing = await this.usersRepository.findOneBy({
-      email: dto.email.toLowerCase(),
+  async create(createUserDto: CreateUserDto): Promise<UserResponseDto> {
+    const normalizedEmail = createUserDto.email.trim().toLowerCase();
+
+    const existingUser = await this.usersRepository.findOne({
+      where: { email: normalizedEmail },
     });
-    if (existing) throw new ConflictException('Email is already registered');
+
+    if (existingUser) {
+      throw new ConflictException(
+        `El correo electrónico "${normalizedEmail}" ya se encuentra registrado`,
+      );
+    }
+
+    const salt = await bcrypt.genSalt(10);
+    const passwordHash = await bcrypt.hash(createUserDto.password, salt);
 
     const user = this.usersRepository.create({
-      email: dto.email.toLowerCase(),
-      passwordHash: await bcrypt.hash(dto.password, 12),
-      role: UserRole.STUDENT,
+      email: normalizedEmail,
+      passwordHash,
     });
-    await this.usersRepository.save(user);
-    return this.loginResult(user);
-  }
 
-  async login(email: string, password: string) {
-    const user = await this.usersRepository.findOneBy({
-      email: email.toLowerCase(),
-    });
-    if (!user || !(await bcrypt.compare(password, user.passwordHash))) {
-      throw new UnauthorizedException('Invalid credentials');
+    try {
+      const savedUser = await this.usersRepository.save(user);
+
+      return {
+        id: savedUser.id,
+        email: savedUser.email,
+        createdAt: savedUser.createdAt,
+      };
+    } catch (error: any) {
+      if (error?.code === '23505') {
+        throw new ConflictException(
+          `El correo electrónico "${normalizedEmail}" ya se encuentra registrado`,
+        );
+      }
+      throw new InternalServerErrorException(
+        'Error inesperado al registrar el usuario',
+      );
     }
-    return this.loginResult(user);
   }
 
-  async setRole(id: number, role: UserRole) {
-    const user = await this.usersRepository.findOneBy({ id });
-    if (!user) throw new NotFoundException(`User ${id} not found`);
-    user.role = role;
-    return this.usersRepository.save(user);
+  async findByEmail(email: string): Promise<User | null> {
+    const normalizedEmail = email.trim().toLowerCase();
+    return await this.usersRepository.findOne({
+      where: { email: normalizedEmail },
+    });
   }
 
-  private loginResult(user: User) {
-    const payload = { sub: user.id, email: user.email, role: user.role };
+  async findByEmailWithPassword(email: string): Promise<User | null> {
+    const normalizedEmail = email.trim().toLowerCase();
+    return await this.usersRepository
+      .createQueryBuilder('user')
+      .addSelect('user.passwordHash')
+      .where('user.email = :email', { email: normalizedEmail })
+      .getOne();
+  }
+
+  async findOne(id: number): Promise<UserResponseDto | null> {
+    const user = await this.usersRepository.findOne({ where: { id } });
+    if (!user) {
+      return null;
+    }
     return {
-      accessToken: this.jwtService.sign(payload),
-      user: { id: user.id, email: user.email, role: user.role },
+      id: user.id,
+      email: user.email,
+      createdAt: user.createdAt,
     };
   }
 }

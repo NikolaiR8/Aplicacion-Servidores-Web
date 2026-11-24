@@ -39,16 +39,26 @@ import { RequestLoggerMiddleware } from './common/middleware/request-logger.midd
     TypeOrmModule.forRootAsync({
       imports: [ConfigModule],
       inject: [ConfigService],
-      useFactory: (config: ConfigService) => ({
-        type: 'postgres',
-        host: config.getOrThrow<string>('DB_HOST'),
-        port: config.getOrThrow<number>('DB_PORT'),
-        username: config.getOrThrow<string>('DB_USER'),
-        password: config.getOrThrow<string>('DB_PASSWORD'),
-        database: config.getOrThrow<string>('DB_NAME'),
-        autoLoadEntities: true,
-        synchronize: config.getOrThrow<string>('NODE_ENV') === 'development',
-      }),
+      useFactory: (config: ConfigService) => {
+        const nodeEnv = config.getOrThrow<string>('NODE_ENV');
+        const database = config.getOrThrow<string>('DB_NAME');
+        if (nodeEnv === 'test' && !/_test$/i.test(database)) {
+          throw new Error(
+            'NODE_ENV=test requires a database name ending in "_test".',
+          );
+        }
+
+        return {
+          type: 'postgres' as const,
+          host: config.getOrThrow<string>('DB_HOST'),
+          port: config.getOrThrow<number>('DB_PORT'),
+          username: config.getOrThrow<string>('DB_USER'),
+          password: config.getOrThrow<string>('DB_PASSWORD'),
+          database,
+          autoLoadEntities: true,
+          synchronize: ['development', 'test'].includes(nodeEnv),
+        };
+      },
     }),
     CoursesModule,
     StudentsModule,

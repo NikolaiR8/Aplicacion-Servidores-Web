@@ -89,6 +89,53 @@ Las pruebas usan **Vitest**, que ya está configurado en el proyecto con el patr
 
 La suite del caso de uso comprueba actualización del docente propietario y de un administrador, `404` para curso inexistente y `403` para docente ajeno, verificando además que los casos rechazados no llaman a `save`. La suite del controlador comprueba la delegación de id, DTO e identidad y que los errores del caso de uso se propaguen.
 
+### 7. Ejecutar pruebas end-to-end
+
+Las pruebas e2e usan PostgreSQL real, pero solo con una base dedicada cuyo nombre termina en `_test`. Nunca configures aquí la base de desarrollo o producción. La configuración de prueba se niega a iniciar si falta alguna variable `E2E_DB_*` o si el nombre no termina en `_test`. El esquema se sincroniza y las tablas de matrículas, cursos y usuarios se limpian antes de cada caso y al finalizar.
+
+#### Preparar una base local (una sola vez)
+
+Crea una base vacía llamada `coursehub_test` en tu servidor PostgreSQL. Desde pgAdmin, conéctate al servidor local, abre Query Tool sobre la base `postgres` y ejecuta:
+
+```sql
+CREATE DATABASE coursehub_test;
+```
+
+Si ya existe `coursehub_test`, no vuelvas a ejecutar esa sentencia. No uses la base `coursehub` de desarrollo como base e2e.
+
+#### Configurar PowerShell y ejecutar e2e
+
+En una terminal PowerShell situada en la raíz del proyecto, define estas variables. Cambia `REEMPLAZA_CON_TU_PASSWORD_LOCAL` por la contraseña del usuario PostgreSQL local; no la guardes en el repositorio ni en capturas.
+
+```powershell
+$env:E2E_DB_HOST = "localhost"
+$env:E2E_DB_PORT = "5432"
+$env:E2E_DB_NAME = "coursehub_test"
+$env:E2E_DB_USER = "postgres"
+$env:E2E_DB_PASSWORD = "REEMPLAZA_CON_TU_PASSWORD_LOCAL"
+npm run test:e2e
+```
+
+El conjunto cubre `GET /courses` público, `PATCH /courses/:id` sin token (`401`), docente no propietario (`403`) y docente propietario (`200`). Cada prueba crea sus usuarios y curso; el teardown elimina esos datos. Las pruebas e2e usan Jest y Supertest; las pruebas unitarias existentes siguen usando Vitest.
+
+El e2e sustituye únicamente el rate limiter por un adaptador de prueba sin límites en [`test/e2e-throttler.module.ts`](./test/e2e-throttler.module.ts), porque el paquete actual de throttling CommonJS no carga en Jest junto con NestJS 12 ESM en Node 22. Los guards JWT/roles, el caso de uso y PostgreSQL sí son reales; esta suite no pretende volver a probar la limitación de solicitudes.
+
+### 8. Verificaciones locales equivalentes a CI
+
+Desde la raíz del repositorio ejecuta, en este orden:
+
+```powershell
+npm ci
+npm run lint
+npm run test
+npm run test:e2e
+npm run build
+```
+
+`npm run test:e2e` requiere que PostgreSQL esté activo, exista `coursehub_test` y estén definidas las variables `E2E_DB_*` en esa misma terminal. El workflow de GitHub Actions crea un servicio PostgreSQL temporal y ejecuta estas verificaciones automáticamente en cada `push` y `pull_request` dirigido a `main`.
+
+Para revisar avisos de dependencias, ejecuta `npm audit`. El comando puede terminar con código distinto de cero cuando encuentre avisos; revisa los paquetes afectados y su compatibilidad antes de actualizar, y evita aplicar `npm audit fix --force` sin evaluar el cambio.
+
 ---
 
 ## 📌 Endpoints Principales

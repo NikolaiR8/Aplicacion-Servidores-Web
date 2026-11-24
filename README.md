@@ -75,8 +75,19 @@ npm run start:prod
 ### 6. Ejecutar Pruebas Unitarias
 
 ```bash
+# Suite completa
 npm run test
+
+# Caso de uso y controlador de cursos
+npm run test -- src/courses/use-cases/update-course.use-case.spec.ts src/courses/courses.controller.spec.ts
+
+# Cobertura
+npm run test:cov
 ```
+
+Las pruebas usan **Vitest**, que ya está configurado en el proyecto con el patrón `describe`/`it`/`expect` y dobles `vi.fn()`. Las pruebas de `UpdateCourseUseCase` simulan `CourseRepository`; las de `CoursesController` simulan el caso de uso. No inician HTTP ni requieren PostgreSQL.
+
+La suite del caso de uso comprueba actualización del docente propietario y de un administrador, `404` para curso inexistente y `403` para docente ajeno, verificando además que los casos rechazados no llaman a `save`. La suite del controlador comprueba la delegación de id, DTO e identidad y que los errores del caso de uso se propaguen.
 
 ---
 

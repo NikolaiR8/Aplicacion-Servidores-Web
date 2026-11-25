@@ -126,6 +126,7 @@ Desde la raíz del repositorio ejecuta, en este orden:
 
 ```powershell
 npm ci
+npm audit --omit=dev --audit-level=moderate
 npm run lint
 npm run test
 npm run test:e2e
@@ -134,7 +135,7 @@ npm run build
 
 `npm run test:e2e` requiere que PostgreSQL esté activo, exista `coursehub_test` y estén definidas las variables `E2E_DB_*` en esa misma terminal. El workflow de GitHub Actions crea un servicio PostgreSQL temporal y ejecuta estas verificaciones automáticamente en cada `push` y `pull_request` dirigido a `main`.
 
-Para revisar avisos de dependencias, ejecuta `npm audit`. El comando puede terminar con código distinto de cero cuando encuentre avisos; revisa los paquetes afectados y su compatibilidad antes de actualizar, y evita aplicar `npm audit fix --force` sin evaluar el cambio.
+El workflow ejecuta `npm audit --omit=dev --audit-level=moderate` y falla si encuentra avisos moderados o superiores en dependencias de producción. Para revisar también las herramientas de desarrollo, ejecuta `npm audit`; ese informe puede incluir avisos que no bloquean el workflow. Revisa los paquetes afectados y su compatibilidad antes de actualizarlos, y evita aplicar `npm audit fix --force` sin evaluar el cambio.
 
 ---
 
